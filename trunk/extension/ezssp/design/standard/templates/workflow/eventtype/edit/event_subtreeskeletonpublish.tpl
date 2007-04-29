@@ -35,7 +35,7 @@ no node selected yet
     </select>
     </td>
     <td>
-    <input type="checkbox" name="UserGroupAddOwner_{$event.id}[{$groupNodeID}]" {if $groupConfig.add_owner}checked="checked"{/if}/>
+    <input type="checkbox" name="UserGroupAddOwner_{$event.id}[]" {if $groupConfig.add_owner}checked="checked"{/if} value="{$groupNodeID}" />
     </td>
 </tr>
 {/foreach}

@@ -147,36 +147,44 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
     function fetchHTTPInput( &$http, $base, &$event )
     {
         $userGroups = $this->attributeDecoder( $event, 'skeleton_user_groups' );
-        $rolesPostVarName = 'UserGroupRoleList_' . $event->attribute( 'id' );
-        $addOwnerPostVarName = 'UserGroupAddOwner_' . $event->attribute( 'id' );
 
-        if ( $http->hasPostVariable( $rolesPostVarName ) )
+        // this condition can be removed when this issue if fixed: http://issues.ez.no/10685
+        if ( count( $_POST ) > 0 )
         {
-            $userGroupRoles = $http->postVariable( $rolesPostVarName );
-            foreach ( $userGroupRoles as $groupID => $roles )
+            $userGroups = $this->attributeDecoder( $event, 'skeleton_user_groups' );
+
+            $userGroupRoles = array();
+            $rolesPostVarName = 'UserGroupRoleList_' . $event->attribute( 'id' );
+            if ( $http->hasPostVariable( $rolesPostVarName ) )
             {
-                if ( array_key_exists( $groupID, $userGroups ) )
-                {
-                    $userGroups[$groupID]['roles'] = $roles;
-                }
+                $userGroupRoles = $http->postVariable( $rolesPostVarName );
             }
-        }
 
-        $addOwner = array();
-        if ( $http->hasPostVariable( $addOwnerPostVarName ) )
-        {
-            $addOwner = $http->postVariable( $addOwnerPostVarName );
-        }
+            $addOwner = array();
+            $addOwnerPostVarName = 'UserGroupAddOwner_' . $event->attribute( 'id' );
+            if ( $http->hasPostVariable( $addOwnerPostVarName ) )
+            {
+                $addOwnerGroups = $http->postVariable( $addOwnerPostVarName );
+            }
 
-        $addOwnerGroups = array_keys( $addOwner );
-        foreach ( $userGroups as $groupID => $groupConfig )
-        {
-            $userGroups[$groupID]['add_owner'] = in_array( $groupID, $addOwnerGroups );
-        }
+            foreach ( $userGroups as $groupID => $groupConfig )
+            {
+                if ( array_key_exists( $groupID, $userGroupRoles ) )
+                {
+                    $userGroups[$groupID]['roles'] = $userGroupRoles[$groupID];
+                }
+                else
+                {
+                    $userGroups[$groupID]['roles'] = array();
+                }
 
-        $serializedUserGroupsConfig = $this->serializeUserGroupsConfig( $userGroups );
-        eZDebug::writeDebug( $serializedUserGroupsConfig, 'fetchHTTPInput' );
-        $event->setAttribute( 'data_text1', $serializedUserGroupsConfig );
+                $userGroups[$groupID]['add_owner'] = in_array( $groupID, $addOwnerGroups );
+            }
+
+            $serializedUserGroupsConfig = $this->serializeUserGroupsConfig( $userGroups );
+            eZDebug::writeDebug( $serializedUserGroupsConfig, 'fetchHTTPInput' );
+            $event->setAttribute( 'data_text1', $serializedUserGroupsConfig );
+        }
     }
 
     /*!
