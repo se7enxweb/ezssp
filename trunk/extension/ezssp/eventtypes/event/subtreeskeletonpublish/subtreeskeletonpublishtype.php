@@ -307,15 +307,15 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             return EZ_WORKFLOW_TYPE_STATUS_ACCEPTED;
         }
 
-        // commented for easy debugging
-/*
+        // put the following block in comments for easy debugging
+
         // defer to cron, this is safer because we are going to create some other objects as well
         include_once( 'lib/ezutils/classes/ezsys.php' );
         if ( eZSys::isShellExecution() == false )
         {
             return EZ_WORKFLOW_TYPE_STATUS_DEFERRED_TO_CRON_REPEAT;
         }
-*/
+
 
         $this->copySkeleton( $object, $event );
         $this->addOwnerLocation( $object, $event );
