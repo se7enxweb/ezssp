@@ -41,7 +41,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         $this->oldNodeIDToNewObjectIDMap = array();
     }
 
-    function &attributeDecoder( &$event, $attr )
+    function attributeDecoder( $event, $attr )
     {
         $retValue = null;
         switch( $attr )
@@ -75,7 +75,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         return array( 'skeleton_node_id', 'skeleton_user_groups', 'role_list' );
     }
 
-    function unserializeUserGroupsConfig( &$event )
+    function unserializeUserGroupsConfig( $event )
     {
         $retValue = array();
         $xmlString = $event->attribute( 'data_text1' );
@@ -112,13 +112,13 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
     {
         include_once( 'lib/ezxml/classes/ezxml.php' );
         $dom = new eZDOMDocument();
-        $skeleton =& $dom->createElement( 'skeleton' );
+        $skeleton = $dom->createElement( 'skeleton' );
         $dom->setRoot( $skeleton );
 
         foreach ( $userGroups as $nodeID => $groupConfig )
         {
             unset( $groupNode );
-            $groupNode =& $dom->createElement( 'group' );
+            $groupNode = $dom->createElement( 'group' );
             $groupNode->setAttribute( 'node_id', $nodeID );
             $skeleton->appendChild( $groupNode );
 
@@ -132,7 +132,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
                 foreach ( $groupConfig['roles'] as $roleID )
                 {
                     unset( $roleNode );
-                    $roleNode =& $dom->createElement( 'role' );
+                    $roleNode = $dom->createElement( 'role' );
                     $roleNode->setAttribute( 'role_id', $roleID );
                     $groupNode->appendChild( $roleNode );
                 }
@@ -144,7 +144,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         return $xmlString;
     }
 
-    function fetchHTTPInput( &$http, $base, &$event )
+    function fetchHTTPInput( $http, $base, $event )
     {
         $userGroups = $this->attributeDecoder( $event, 'skeleton_user_groups' );
 
@@ -190,10 +190,10 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
     /*!
      \reimp
     */
-    function customWorkflowEventHTTPAction( &$http, $action, &$workflowEvent )
+    function customWorkflowEventHTTPAction( $http, $action, $workflowEvent )
     {
         $eventID = $workflowEvent->attribute( 'id' );
-        $module =& $GLOBALS['eZRequestedModule'];
+        $module = $GLOBALS['eZRequestedModule'];
 
         switch ( $action )
         {
@@ -262,7 +262,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
     /*!
      \brief Adds user groups to the list
     */
-    function addUserGroups( &$workflowEvent, $nodeList )
+    function addUserGroups( $workflowEvent, $nodeList )
     {
         $userGroups = $this->attributeDecoder( $workflowEvent, 'skeleton_user_groups' );
 
@@ -279,7 +279,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         $workflowEvent->setAttribute( 'data_text1', $serializedUserGroupsConfig );
     }
 
-    function removeUserGroups( &$workflowEvent, $nodeList )
+    function removeUserGroups( $workflowEvent, $nodeList )
     {
         $userGroups = $this->attributeDecoder( $workflowEvent, 'skeleton_user_groups' );
 
@@ -296,7 +296,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         $workflowEvent->setAttribute( 'data_text1', $serializedUserGroupsConfig );
     }
 
-    function execute( &$process, &$event )
+    function execute( $process, $event )
     {
         // global variable to prevent endless recursive workflows with this event
         $recursionProtect = 'SubTreeSkelectonPublishType_recursionprotect_' . $event->attribute( 'id' );
@@ -306,12 +306,12 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         }
 
         $parameters = $process->attribute( 'parameter_list' );
-        $object =& eZContentObject::fetch( $parameters['object_id'] );
+        $object = eZContentObject::fetch( $parameters['object_id'] );
 
         // if the object is not published for the first time, then we don't do anything
         if ( $object->attribute( 'modified' ) != $object->attribute( 'published' ) )
         {
-            return EZ_WORKFLOW_TYPE_STATUS_ACCEPTED;
+            return eZWorkflowType::STATUS_ACCEPTED;
         }
 
         // put the following block in comments for easy debugging
@@ -320,7 +320,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         include_once( 'lib/ezutils/classes/ezsys.php' );
         if ( eZSys::isShellExecution() == false )
         {
-            return EZ_WORKFLOW_TYPE_STATUS_DEFERRED_TO_CRON_REPEAT;
+            return eZWorkflowType::STATUS_DEFERRED_TO_CRON_REPEAT;
         }
 
         if ( !array_key_exists( $recursionProtect, $GLOBALS ) )
@@ -333,13 +333,13 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         $this->assignRoles( $object, $event );
 
         unset( $GLOBALS[$recursionProtect] );
-        return EZ_WORKFLOW_TYPE_STATUS_ACCEPTED;
+        return eZWorkflowType::STATUS_ACCEPTED;
     }
 
-    function addOwnerLocation( &$object, &$event )
+    function addOwnerLocation( $object, $event )
     {
         $userGroups = $this->attributeDecoder( $event, 'skeleton_user_groups' );
-        $userID =& $object->attribute( 'owner_id' );
+        $userID = $object->attribute( 'owner_id' );
 
         foreach ( $userGroups as $groupNodeID => $groupConfig )
         {
@@ -359,7 +359,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         }
     }
 
-    function assignRoles( &$object, &$event )
+    function assignRoles( $object, $event )
     {
         include_once( 'lib/ezdb/classes/ezdb.php' );
         include_once( 'lib/ezutils/classes/ezini.php' );
@@ -368,7 +368,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         $madeChanges = array();
 
         include_once( 'lib/ezdb/classes/ezdb.php' );
-        $db =& eZDB::instance();
+        $db = eZDB::instance();
         $db->begin();
 
         $userGroups = $this->attributeDecoder( $event, 'skeleton_user_groups' );
@@ -386,7 +386,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             foreach ( $groupConfig['roles'] as $roleID )
             {
                 include_once( 'kernel/classes/ezrole.php' );
-                $role =& eZRole::fetch( $roleID );
+                $role = eZRole::fetch( $roleID );
 
                 if ( !is_object( $role ) )
                 {
@@ -394,7 +394,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
                     continue;
                 }
 
-                $projectNode =& $object->attribute( 'main_node' );
+                $projectNode = $object->attribute( 'main_node' );
                 $pathString = $projectNode->attribute( 'path_string' );
 
                 $query = "INSERT INTO ezuser_role ( role_id, contentobject_id, limit_identifier, limit_value ) VALUES ( '$roleID', '$newGroupID', 'Subtree', '$pathString' )";
@@ -419,13 +419,13 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
     /*
         PART: SKELETON
     */
-    function copySkeleton( $object, &$event )
+    function copySkeleton( $object, $event )
     {
-        $projectNode =& $object->attribute( 'main_node' );
+        $projectNode = $object->attribute( 'main_node' );
         $this->ownerID = $object->attribute( 'owner_id' );
 
         $skeletonNodeID = $this->attributeDecoder( $event, 'skeleton_node_id' );
-        $skeletonNode =& eZContentObjectTreeNode::fetch( $skeletonNodeID );
+        $skeletonNode = eZContentObjectTreeNode::fetch( $skeletonNodeID );
 
         $this->copyChildrenRecursive( $skeletonNode, $projectNode );
     }
@@ -439,9 +439,9 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         maybe it's useful to not read every node because of permissions of the project creator
         then we can insert customer groups and other stuff too in the skeleton
     */
-    function copyChildrenRecursive( &$sourceParentNode, &$targetParentNode )
+    function copyChildrenRecursive( $sourceParentNode, $targetParentNode )
     {
-        $db =& eZDB::instance();
+        $db = eZDB::instance();
         $db->begin();
 
         $sourceParentNodeID = $sourceParentNode->attribute( 'node_id' );
@@ -467,15 +467,15 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             'SortBy' => $sortArray
             );
 
-        $sourceNodeList = eZContentObjectTreeNode::subTree( $subTreeParams, $sourceParentNodeID );
+        $sourceNodeList = eZContentObjectTreeNode::subTreeByNodeID( $subTreeParams, $sourceParentNodeID );
 
         foreach ( $sourceNodeList as $sourceNode )
         {
             eZDebug::writeDebug( $sourceNode->attribute( 'name' ) );
-            $newNode =& $this->copyNode( $sourceNode, $targetParentNode, $sourceParentNode );
+            $newNode = $this->copyNode( $sourceNode, $targetParentNode, $sourceParentNode );
             $this->oldNodeIDToNewObjectIDMap[$sourceNode->attribute( 'node_id' )] = $newNode->attribute( 'contentobject_id' );
-            $sourceObj =& $sourceParentNode->object();
-            $contentClass =& $sourceObj->attribute( 'content_class' );
+            $sourceObj = $sourceParentNode->object();
+            $contentClass = $sourceObj->attribute( 'content_class' );
             if ( $contentClass->attribute( 'is_container' ) )
             {
                 $this->copyChildrenRecursive( $sourceNode, $newNode );
@@ -491,10 +491,10 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         $db->commit();
     }
 
-    function copyNode( &$sourceNode, &$targetParentNode, &$sourceParentNode )
+    function copyNode( $sourceNode, $targetParentNode, $sourceParentNode )
     {
-        $sourceParentObject =& $sourceParentNode->attribute( 'object' );
-        $tagetParentObject =& $targetParentNode->attribute( 'object' );
+        $sourceParentObject = $sourceParentNode->attribute( 'object' );
+        $tagetParentObject = $targetParentNode->attribute( 'object' );
         $object = $sourceNode->attribute( 'object' );
 
         $sectionID = $tagetParentObject->attribute( 'section_id' );
@@ -505,17 +505,17 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
         //eZDebug::writeDebug( 'section id: ' . $sectionID );
 
-        $newObject =& $object->copy( false );
+        $newObject = $object->copy( false );
         $newObject->setAttribute( 'section_id', $sectionID );
         $newObject->setAttribute( 'owner_id', $this->ownerID );
         $newObject->store();
         $newParentNodeID = $targetParentNode->attribute( 'node_id' );
 
-        $curVersion        =& $newObject->attribute( 'current_version' );
-        $curVersionObject  =& $newObject->attribute( 'current' );
+        $curVersion        = $newObject->attribute( 'current_version' );
+        $curVersionObject  = $newObject->attribute( 'current' );
         $curVersionObject->setAttribute( 'creator_id', $this->ownerID );
         $curVersionObject->store();
-        $newObjAssignments =& $curVersionObject->attribute( 'node_assignments' );
+        $newObjAssignments = $curVersionObject->attribute( 'node_assignments' );
         unset( $curVersionObject );
 
         // remove old node assignments
@@ -541,7 +541,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
                    'version'   => $curVersion ) );
 
         // Update "priority" and "is_invisible" attribute for the newly created node.
-        $newNode =& $newObject->attribute( 'main_node' );
+        $newNode = $newObject->attribute( 'main_node' );
         $newNode->setAttribute( 'priority', $sourceNode->attribute( 'priority' ) );
         $newNode->store();
         eZContentObjectTreeNode::updateNodeVisibility( $newNode, $targetParentNode );
@@ -550,6 +550,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
     }
 }
 
-eZWorkflowEventType::registerType( 'subtreeskeletonpublish', 'SubtreeSkeletonPublishType' );
+eZWorkflowEventType::registerEventType( 'subtreeskeletonpublish', 'SubtreeSkeletonPublishType' );
 
 ?>
