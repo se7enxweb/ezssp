@@ -160,9 +160,9 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
                 $userGroupRoles = $http->postVariable( $rolesPostVarName );
             }
 
-            $addOwner = array();
+            $addOwnerGroups = array();
             $addOwnerPostVarName = 'UserGroupAddOwner_' . $event->attribute( 'id' );
-            if ( $http->hasPostVariable( $addOwnerPostVarName ) )
+            if ( $http->hasPostVariable( $addOwnerPostVarName ) && is_array( $http->postVariable( $addOwnerPostVarName ) ) )
             {
                 $addOwnerGroups = $http->postVariable( $addOwnerPostVarName );
             }
@@ -298,6 +298,13 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
     function execute( &$process, &$event )
     {
+        // global variable to prevent endless recursive workflows with this event
+        $recursionProtect = 'SubTreeSkelectonPublishType_recursionprotect_' . $event->attribute( 'id' );
+        if ( array_key_exists( $recursionProtect, $GLOBALS ) )
+        {
+            return eZWorkflowType::STATUS_ACCEPTED;
+        }
+
         $parameters = $process->attribute( 'parameter_list' );
         $object =& eZContentObject::fetch( $parameters['object_id'] );
 
@@ -316,11 +323,16 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             return EZ_WORKFLOW_TYPE_STATUS_DEFERRED_TO_CRON_REPEAT;
         }
 
+        if ( !array_key_exists( $recursionProtect, $GLOBALS ) )
+        {
+            $GLOBALS[$recursionProtect] = true;
+        }
 
         $this->copySkeleton( $object, $event );
         $this->addOwnerLocation( $object, $event );
         $this->assignRoles( $object, $event );
 
+        unset( $GLOBALS[$recursionProtect] );
         return EZ_WORKFLOW_TYPE_STATUS_ACCEPTED;
     }
 
