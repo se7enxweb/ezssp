@@ -24,9 +24,6 @@
 // ## END COPYRIGHT, LICENSE AND WARRANTY NOTICE ##
 //
 
-include_once( 'kernel/classes/ezworkflowtype.php' );
-include_once( 'kernel/classes/ezcontentobject.php' );
-
 class SubtreeSkeletonPublishType extends eZWorkflowEventType
 {
     var $oldNodeIDToNewObjectIDMap = array();
@@ -58,7 +55,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
             case 'role_list':
             {
-                include_once( 'kernel/classes/ezrole.php' );
                 $retValue = eZRole::fetchList();
             } break;
 
@@ -84,7 +80,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             return $retValue;
         }
 
-        include_once( 'lib/ezxml/classes/ezxml.php' );
         $xml = new eZXML();
         $dom = $xml->domTree( $xmlString );
         $root = $dom->root();
@@ -110,7 +105,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
     function serializeUserGroupsConfig( $userGroups )
     {
-        include_once( 'lib/ezxml/classes/ezxml.php' );
         $dom = new eZDOMDocument();
         $skeleton = $dom->createElement( 'skeleton' );
         $dom->setRoot( $skeleton );
@@ -199,7 +193,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         {
             case 'SelectSkeleton':
             {
-                include_once( 'kernel/classes/ezcontentbrowse.php' );
                 eZContentBrowse::browse( array( 'action_name' => 'SelectSkeleton',
                                                 'browse_custom_action' => array( 'name' => 'CustomActionButton[' . $eventID . '_SkeletonSelected]',
                                                                                  'value' => $eventID ),
@@ -211,7 +204,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
             case 'SkeletonSelected':
             {
-                include_once( 'kernel/classes/ezcontentbrowse.php' );
                 $nodeList = eZContentBrowse::result( 'SelectSkeleton' );
                 if ( $nodeList )
                 {
@@ -221,7 +213,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
             case 'AddSkeletonUserGroups':
             {
-                include_once( 'kernel/classes/ezcontentbrowse.php' );
                 eZContentBrowse::browse( array( 'action_name' => 'AddSkeletonUserGroups',
                                                 'browse_custom_action' => array( 'name' => 'CustomActionButton[' . $eventID . '_SkeletonUserGroupsAdded]',
                                                                                  'value' => $eventID ),
@@ -234,7 +225,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
             case 'SkeletonUserGroupsAdded':
             {
-                include_once( 'kernel/classes/ezcontentbrowse.php' );
                 $nodeList = eZContentBrowse::result( 'AddSkeletonUserGroups' );
                 if ( $nodeList )
                 {
@@ -317,7 +307,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         // put the following block in comments for easy debugging
 
         // defer to cron, this is safer because we are going to create some other objects as well
-        include_once( 'lib/ezutils/classes/ezsys.php' );
         if ( eZSys::isShellExecution() == false )
         {
             return eZWorkflowType::STATUS_DEFERRED_TO_CRON_REPEAT;
@@ -353,7 +342,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
                 $newGroupID = $this->oldNodeIDToNewObjectIDMap[$groupNodeID];
 
-                include_once( 'lib/ezutils/classes/ezoperationhandler.php' );
                 $operationResult = eZOperationHandler::execute( 'membership', 'register', array( 'group_id' => $newGroupID, 'user_id' => $userID ) );
             }
         }
@@ -361,13 +349,8 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
     function assignRoles( $object, $event )
     {
-        include_once( 'lib/ezdb/classes/ezdb.php' );
-        include_once( 'lib/ezutils/classes/ezini.php' );
-        include_once( 'kernel/classes/ezrole.php' );
-
         $madeChanges = array();
 
-        include_once( 'lib/ezdb/classes/ezdb.php' );
         $db = eZDB::instance();
         $db->begin();
 
@@ -385,7 +368,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
             foreach ( $groupConfig['roles'] as $roleID )
             {
-                include_once( 'kernel/classes/ezrole.php' );
                 $role = eZRole::fetch( $roleID );
 
                 if ( !is_object( $role ) )
@@ -408,10 +390,8 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         {
             eZRole::expireCache();
 
-            include_once( 'kernel/classes/ezcontentcachemanager.php' );
             eZContentCacheManager::clearAllContentCache();
 
-            include_once( 'kernel/classes/datatypes/ezuser/ezuser.php' );
             eZUser::cleanupCache();
         }
     }
@@ -535,7 +515,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
                                                          ) );
         $nodeAssignment->store();
 
-        include_once( 'lib/ezutils/classes/ezoperationhandler.php' );
         $result = eZOperationHandler::execute( 'content', 'publish',
             array( 'object_id' => $newObject->attribute( 'id' ),
                    'version'   => $curVersion ) );
