@@ -12,6 +12,10 @@ no node selected yet
 </div>
 
 <div class="block">
+<label><input type="checkbox" name="NoCron_{$event.id}" value="1" {if $event.no_cron}checked="checked"{/if} id="NoCron-{$event.id}" /> {'Do not defer to cron'|i18n( 'extension/ezssp' )}</label>
+</div>
+
+<div class="block">
 <fieldset>
 <legend>{'Subtree-limited role assignments'|i18n( 'extension/ezssp' )}</legend>
 

@@ -29,9 +29,9 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
     var $oldNodeIDToNewObjectIDMap = array();
     var $ownerID;
 
-    function SubtreeSkeletonPublishType()
+    function __construct()
     {
-        $this->eZWorkflowEventType( 'subtreeskeletonpublish', ezi18n( 'extension/ezssp', 'Subtree Skeleton Publisher' ) );
+        $this->eZWorkflowEventType( 'subtreeskeletonpublish', ezpI18n::tr( 'extension/ezssp', 'Subtree Skeleton Publisher' ) );
         // limit workflows which use this event to be used only on the post-publish trigger
         $this->setTriggerTypes( array( 'content' => array( 'publish' => array( 'after' ) ) ) );
 
@@ -46,6 +46,11 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             case 'skeleton_node_id':
             {
                 $retValue = $event->attribute( 'data_int1' );
+            } break;
+
+            case 'no_cron':
+            {
+                $retValue = $event->attribute( 'data_int2' );
             } break;
 
             case 'skeleton_user_groups':
@@ -68,7 +73,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
     function typeFunctionalAttributes()
     {
-        return array( 'skeleton_node_id', 'skeleton_user_groups', 'role_list' );
+        return array( 'skeleton_node_id', 'skeleton_user_groups', 'role_list', 'no_cron' );
     }
 
     function unserializeUserGroupsConfig( $event )
@@ -80,21 +85,21 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             return $retValue;
         }
 
-        $xml = new eZXML();
-        $dom = $xml->domTree( $xmlString );
-        $root = $dom->root();
-        $groups = $root->elementsByName( 'group' );
+        $dom = new DOMDocument('1.0', 'utf-8');
+        $dom->loadXML($xmlString);
+        $root = $dom->documentElement;
+        $groups = $root->getElementsByTagName( 'group' );
 
         foreach ( $groups as $group )
         {
-            $nodeID = $group->get_attribute( 'node_id' );
-            $addOwner = ( $group->get_attribute( 'add_owner' ) !== false );
-            $roles = $group->elementsByName( 'role' );
+            $nodeID = $group->getAttribute( 'node_id' );
+            $addOwner = ( $group->getAttribute( 'add_owner' ) !== false );
+            $roles = $group->getElementsByTagName( 'role' );
 
             $roleList = array();
             foreach ( $roles as $role )
             {
-                $roleList[] = $role->get_attribute( 'role_id' );
+                $roleList[] = $role->getAttribute( 'role_id' );
             }
 
             $retValue[$nodeID] = array( 'roles' => $roleList, 'add_owner' => $addOwner );
@@ -105,13 +110,12 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
 
     function serializeUserGroupsConfig( $userGroups )
     {
-        $dom = new eZDOMDocument();
+        $dom = new DOMDocument('1.0', 'utf-8');
         $skeleton = $dom->createElement( 'skeleton' );
-        $dom->setRoot( $skeleton );
+        $dom->appendChild( $skeleton );
 
         foreach ( $userGroups as $nodeID => $groupConfig )
         {
-            unset( $groupNode );
             $groupNode = $dom->createElement( 'group' );
             $groupNode->setAttribute( 'node_id', $nodeID );
             $skeleton->appendChild( $groupNode );
@@ -125,7 +129,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             {
                 foreach ( $groupConfig['roles'] as $roleID )
                 {
-                    unset( $roleNode );
                     $roleNode = $dom->createElement( 'role' );
                     $roleNode->setAttribute( 'role_id', $roleID );
                     $groupNode->appendChild( $roleNode );
@@ -133,8 +136,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             }
         }
 
-        $xmlString = $dom->toString();
-        eZDebug::writeDebug( $xmlString, 'serializeUserGroupsConfig' );
+        $xmlString = $dom->saveXML();
         return $xmlString;
     }
 
@@ -176,8 +178,10 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
             }
 
             $serializedUserGroupsConfig = $this->serializeUserGroupsConfig( $userGroups );
-            eZDebug::writeDebug( $serializedUserGroupsConfig, 'fetchHTTPInput' );
             $event->setAttribute( 'data_text1', $serializedUserGroupsConfig );
+
+            $noCron = $http->postVariable('NoCron_' . $event->attribute('id'), 0);
+            $event->setAttribute( 'data_int2', $noCron );
         }
     }
 
@@ -265,7 +269,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         }
 
         $serializedUserGroupsConfig = $this->serializeUserGroupsConfig( $userGroups );
-        eZDebug::writeDebug( $serializedUserGroupsConfig, 'addUserGroups' );
         $workflowEvent->setAttribute( 'data_text1', $serializedUserGroupsConfig );
     }
 
@@ -282,7 +285,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         }
 
         $serializedUserGroupsConfig = $this->serializeUserGroupsConfig( $userGroups );
-        eZDebug::writeDebug( $serializedUserGroupsConfig, 'removeUserGroups' );
         $workflowEvent->setAttribute( 'data_text1', $serializedUserGroupsConfig );
     }
 
@@ -307,7 +309,7 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         // put the following block in comments for easy debugging
 
         // defer to cron, this is safer because we are going to create some other objects as well
-        if ( eZSys::isShellExecution() == false )
+        if ( eZSys::isShellExecution() == false && $this->attributeDecoder( $event, 'no_cron' ) == false )
         {
             return eZWorkflowType::STATUS_DEFERRED_TO_CRON_REPEAT;
         }
@@ -482,8 +484,6 @@ class SubtreeSkeletonPublishType extends eZWorkflowEventType
         {
             $sectionID = $object->attribute( 'section_id' );
         }
-
-        //eZDebug::writeDebug( 'section id: ' . $sectionID );
 
         $newObject = $object->copy( false );
         $newObject->setAttribute( 'section_id', $sectionID );
