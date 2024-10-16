@@ -1,0 +1,30 @@
+{
+    "name": "se7enxweb/ezssp",
+    "description": "Subtree Skeleton Publisher copies a skeleton node tree to a given node via workflow event. Great for savy developers!",
+    "type": "ezpublish-legacy-extension",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+	{
+            "name" : "7x",
+            "homepage": "https://se7enx.com",
+            "email": "info@se7enx.com",
+	    "role": "Developer"
+	},
+        {
+            "name": "eZ Publish Community",
+            "homepage": "https://github.com/se7enxweb/ezssp/contributors",
+    	    "role": "Contributors"
+        },
+        {
+            "name": "Kristof Coomans",
+            "role": "Author"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "se7enxweb/ezpublish-legacy-installer": "*"
+    },
+    "extra": {
+        "ezpublish-legacy-extension-name": "ezssp"
+    }
+}
