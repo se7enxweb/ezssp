@@ -5,7 +5,7 @@ class ezsspInfo
     {
         return array(
             'Name' => "Subtree Skeleton Publisher",
-            'Version' => "1.1.0",
+            'Version' => "1.1.1",
             'Copyright' => "Copyright (C) 1998 - 2026 Exponential Foundation and 7x. All rights reserved. Copyright (C) 2007 Kristof Coomans",
             'License' => "GNU General Public License v2.0"
         );
